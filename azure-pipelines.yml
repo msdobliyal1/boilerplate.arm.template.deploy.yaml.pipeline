@@ -1,0 +1,51 @@
+---
+#-----------------------------------------------------------
+# pipeline to build, test and deploy ARM templates
+# [No modifications is reccomended here]
+#-----------------------------------------------------------
+trigger:
+- none
+
+parameters:
+- name: env
+  type: string
+  default: 'dev'
+  values:
+  - dev
+  - prd
+  - qas
+
+- name: customer
+  type: string
+  default: 'RNDM'
+
+variables:
+- template: azure-pipelines/vars/customer/${{ parameters.customer }}/${{ parameters.env }}.yml
+
+stages:
+- template: azure-pipelines/build.yml
+  parameters:
+    env: ${{ parameters.env }}
+    customer: ${{ parameters.customer }}
+    azureConnection: ${{ variables.azureConnection }}
+    subscriptionId: ${{ variables.subscriptionId }}
+    resourceGroup: ${{ variables.resourceGroup }}
+    location: ${{ variables.location }}
+
+- template: azure-pipelines/test.yml
+  parameters:
+    env: ${{ parameters.env }}
+    customer: ${{ parameters.customer }}
+    azureConnection: ${{ variables.azureConnection }}
+    subscriptionId: ${{ variables.subscriptionId }}
+    resourceGroup: ${{ variables.resourceGroup }}
+    location: ${{ variables.location }}
+
+- template: azure-pipelines/deploy.yml
+  parameters:
+    env: ${{ parameters.env }}
+    customer: ${{ parameters.customer }}
+    azureConnection: ${{ variables.azureConnection }}
+    subscriptionId: ${{ variables.subscriptionId }}
+    resourceGroup: ${{ variables.resourceGroup }}
+    location: ${{ variables.location }}

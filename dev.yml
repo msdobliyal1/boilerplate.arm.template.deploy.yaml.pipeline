@@ -1,0 +1,10 @@
+---
+#-------------------------------------------------------------------
+# vars declaration to be referred into pipeline as template
+#-------------------------------------------------------------------
+variables:
+  azureConnection: 'sc-az3-rg-vikas.pandey'
+  subscriptionId: 'cc934d76-6d72-49cb-a908-81aaaaaa'
+  resourceGroup: 'RG_Vikas.Pandey'
+  location: 'westeurope'
+  deploymentName: 'azdevops-pipeline-deploy-$(Build.BuildNumber)'

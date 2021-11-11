@@ -1,0 +1,56 @@
+---
+#-------------------------------------------------------------
+# pipeline with steps to execute during Test stage
+#-------------------------------------------------------------
+parameters:
+  env: ''
+  customer: ''
+  azureConnection: ''
+  subscriptionId: ''
+  resourceGroup: ''
+  location: ''
+
+stages:
+- stage: TEST_${{ parameters.customer }}_${{ parameters.env }}
+  jobs:
+  - job: validate_arm_templates_${{ parameters.customer }}_${{ parameters.env }}
+    pool:
+      vmimage: windows-latest
+    variables:
+      DECODE_PERCENTS: true
+    steps:
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: "Validate Template"
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: ${{ parameters.azureConnection }}
+          subscriptionId: ${{ parameters.subscriptionId }}
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: ${{ parameters.resourceGroup }}
+          location: ${{ parameters.location }}
+          templateLocation: 'Linked artifact'
+          csmFile: '$(Build.SourcesDirectory)/ARM.templates/azuredeploy.json'
+          csmParametersFile: '$(Build.SourcesDirectory)/ARM.templates/azuredeploy.params.json'
+          deploymentMode: 'Validation'
+      - task: PowerShell@2
+        displayName: "Install Az Modules"
+        inputs:
+          targetType: 'inline'
+          script: |
+                Install-Module Az.Resources -RequiredVersion 1.12.1-preview -AllowPrerelease -Force -Scope CurrentUser
+      - task: AzurePowerShell@5
+        displayName: "Show Deployed Resources"
+        inputs:
+          azureSubscription: ${{ parameters.azureConnection }}
+          ScriptType: 'InlineScript'
+          Inline: |
+            $Parameters = @{
+              ResourcegroupName    = "${{ parameters.resourceGroup }}"
+              Templatefile         = ".\ARM.templates\azuredeploy.json"
+              TemplateParameterfile = ".\ARM.templates\azuredeploy.params.json"
+              Mode                 = 'Incremental'
+            }
+            $Result = Get-AzResourceGroupDeploymentWhatIfResult @Parameters
+            $Result
+          azurePowerShellVersion: 'LatestVersion'
+ 

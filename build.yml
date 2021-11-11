@@ -1,0 +1,33 @@
+---
+#-------------------------------------------------------------
+# pipeline with steps to execute during Build stage
+#-------------------------------------------------------------
+parameters:
+  env: ''
+  customer: ''
+  azureConnection: ''
+  subscriptionId: ''
+  resourceGroup: ''
+  location: ''
+  
+stages:
+- stage: BUILD_${{ parameters.customer }}_${{ parameters.env }}
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+  jobs:
+  - job: build_arm_templates_${{ parameters.customer }}_${{ parameters.env }}
+    pool:
+      vmimage: ubuntu-latest
+    variables:
+      - name: DECODE_PERCENTS
+        value: true
+    steps:
+      - script: |
+          echo "************************************************************"
+          echo "******* This is a place holder for Build related tasks *****"
+          echo "************************************************************"
+        displayName: 'Execute Build Scripts'
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifact: drop'
+        inputs:
+          PathtoPublish: ARM.templates
+          artifactName: 'arm-templates-$(Build.BuildNumber)'

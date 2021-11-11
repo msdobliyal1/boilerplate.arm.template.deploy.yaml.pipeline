@@ -1,0 +1,65 @@
+---
+#-------------------------------------------------------------
+# pipeline with steps to execute during Deploy stage
+#-------------------------------------------------------------
+parameters:
+  env: ''
+  customer: ''
+  azureConnection: ''
+  subscriptionId: ''
+  resourceGroup: ''
+  location: ''
+
+stages:
+- stage: DEPLOY_${{ parameters.customer }}_${{ parameters.env }}
+  jobs:
+  - job: deploy_arm_templates_${{ parameters.customer }}_${{ parameters.env }}
+    pool:
+      vmimage: windows-latest
+    variables:
+      DECODE_PERCENTS: true
+    steps:
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: "Deploy ARM Templates"
+        continueOnError: true
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: ${{ parameters.azureConnection }}
+          subscriptionId: ${{ parameters.subscriptionId }}
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: ${{ parameters.resourceGroup }}
+          location: ${{ parameters.location }}
+          templateLocation: 'Linked artifact'
+          csmFile: '$(Build.SourcesDirectory)/ARM.templates/azuredeploy.json'
+          csmParametersFile: '$(Build.SourcesDirectory)/ARM.templates/azuredeploy.params.json'
+          deploymentMode: 'Incremental'
+          deploymentName: $(deploymentName)
+      - task: PowerShell@2
+        displayName: "Install Az Modules"
+        inputs:
+          targetType: 'inline'
+          script: |
+            Install-Module Az.Resources -RequiredVersion 1.12.1-preview -AllowPrerelease -Force -Scope CurrentUser
+      - task: AzurePowerShell@5
+        displayName: "PowerShell Script: Deploy VNET"
+        inputs:
+          azureSubscription: ${{ parameters.azureConnection }}
+          ScriptType: 'FilePath' 
+          scriptPath: '$(Build.SourcesDirectory)/scripts/deployVnet.ps1'
+          scriptArguments:
+            -vnetRgName "RG_Vikas.Pandey" `
+            -vnet "vnet-weu-dwlr-azpipelinetest01" `
+            -vnetCIDR "192.172.0.0/16"
+          azurePowerShellVersion: 'LatestVersion'
+      - task: AzureCLI@2
+        displayName: "Az-cli BASH Script: Deploy VNET"
+        inputs:
+          azureSubscription: ${{ parameters.azureConnection }}
+          scriptType: 'bash'
+          scriptLocation: 'scriptPath'
+          scriptPath: '$(Build.SourcesDirectory)/scripts/deploy-vnet.sh'
+          arguments: ''
+
+
+          
+ 
